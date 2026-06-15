@@ -1,0 +1,12 @@
+node_modules
+dist
+test
+.env
+.env.*
+!.env.production.example
+.git
+.gitignore
+*.md
+npm-debug.log
+coverage
+.vscode

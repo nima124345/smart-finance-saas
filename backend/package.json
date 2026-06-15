@@ -20,6 +20,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed"
   },
   "prisma": {
