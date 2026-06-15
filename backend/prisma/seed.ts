@@ -1,0 +1,125 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+/**
+ * Seed skeleton (idempotent ด้วย upsert)
+ * เนื้อหาเต็ม (plans + system categories) เติมใน Step 8 / Step 6
+ */
+async function seedPlans(): Promise<void> {
+  const plans = [
+    {
+      code: 'free' as const,
+      name: 'Free',
+      price: BigInt(0),
+      maxWorkspaces: 1,
+      maxWallets: 2,
+      maxTransactionsMonth: 100,
+      features: {
+        advancedDashboard: false,
+        exportCsv: false,
+        teamMembers: false,
+        aiInsights: false,
+      },
+    },
+    {
+      code: 'pro' as const,
+      name: 'Pro',
+      price: BigInt(9900), // ฿99/เดือน
+      maxWorkspaces: 5,
+      maxWallets: null, // unlimited
+      maxTransactionsMonth: null,
+      features: {
+        advancedDashboard: true,
+        exportCsv: true,
+        teamMembers: false,
+        aiInsights: false,
+      },
+    },
+    {
+      code: 'premium' as const,
+      name: 'Premium',
+      price: BigInt(29900), // ฿299/เดือน
+      maxWorkspaces: null,
+      maxWallets: null,
+      maxTransactionsMonth: null,
+      features: {
+        advancedDashboard: true,
+        exportCsv: true,
+        teamMembers: true,
+        aiInsights: true,
+      },
+    },
+  ];
+
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      where: { code: plan.code },
+      update: {
+        name: plan.name,
+        price: plan.price,
+        maxWorkspaces: plan.maxWorkspaces,
+        maxWallets: plan.maxWallets,
+        maxTransactionsMonth: plan.maxTransactionsMonth,
+        features: plan.features,
+      },
+      create: plan,
+    });
+  }
+}
+
+async function seedSystemCategories(): Promise<void> {
+  const income = ['เงินเดือน', 'รายได้เสริม', 'โบนัส', 'ดอกเบี้ย/เงินปันผล', 'ของขวัญ'];
+  const expense = [
+    'อาหาร',
+    'เดินทาง',
+    'ที่พัก',
+    'ค่าน้ำค่าไฟ',
+    'ช้อปปิ้ง',
+    'สุขภาพ',
+    'บันเทิง',
+    'การศึกษา',
+    'อื่นๆ',
+  ];
+
+  const items = [
+    ...income.map((name, i) => ({ name, type: 'income' as const, sortOrder: i })),
+    ...expense.map((name, i) => ({ name, type: 'expense' as const, sortOrder: i })),
+  ];
+
+  for (const item of items) {
+    // ไม่มี unique constraint → ใช้ findFirst (idempotent)
+    const existing = await prisma.category.findFirst({
+      where: { workspaceId: null, name: item.name, type: item.type, isSystem: true },
+      select: { id: true },
+    });
+    if (!existing) {
+      await prisma.category.create({
+        data: {
+          workspaceId: null,
+          name: item.name,
+          type: item.type,
+          isSystem: true,
+          sortOrder: item.sortOrder,
+        },
+      });
+    }
+  }
+}
+
+async function main(): Promise<void> {
+  await seedPlans();
+  await seedSystemCategories();
+  // eslint-disable-next-line no-console
+  console.log('✅ Seed completed (skeleton)');
+}
+
+main()
+  .catch((e) => {
+    // eslint-disable-next-line no-console
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => {
+    void prisma.$disconnect();
+  });

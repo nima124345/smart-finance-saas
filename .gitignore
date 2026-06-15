@@ -1,0 +1,37 @@
+# ── Dependencies ──
+node_modules/
+**/node_modules/
+
+# ── Builds ──
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# ── Env / secrets ──
+.env
+.env.*
+!.env.example
+!.env.local.example
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.local.example
+
+# ── Logs ──
+*.log
+npm-debug.log*
+
+# ── OS / Editor ──
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ── Prisma ──
+*.db
+
+# ── Next ──
+next-env.d.ts

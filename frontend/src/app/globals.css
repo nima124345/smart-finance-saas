@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Design tokens — Smart Finance SaaS
+  สไตล์: clean / premium / neutral (อิง Linear · Stripe · Vercel · Supabase)
+  Base = zinc · Primary = indigo · Finance semantics = emerald/rose/sky
+  ค่าเป็น HSL (เว้นวรรค) เพื่อใช้กับ hsl(var(--x) / <alpha>) ได้
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* Indigo accent */
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 243 75% 59%;
+
+    /* Finance semantics */
+    --income: 142 71% 45%;   /* emerald */
+    --expense: 350 78% 50%;  /* rose */
+    --transfer: 199 89% 48%; /* sky */
+
+    --radius: 0.625rem;
+
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 5.5%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 5.5%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 243 75% 68%;
+    --primary-foreground: 240 10% 3.9%;
+
+    --secondary: 240 3.7% 14%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 14%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 14%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 16%;
+    --input: 240 3.7% 16%;
+    --ring: 243 75% 68%;
+
+    --income: 142 69% 50%;
+    --expense: 350 80% 60%;
+    --transfer: 199 89% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
