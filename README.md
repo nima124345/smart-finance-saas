@@ -18,6 +18,24 @@
 - 💎 **Subscription** — Free / Pro / Premium + plan limit enforcement + PRO trial 14 วัน
 - 🛠️ **Admin Dashboard** — จัดการผู้ใช้ + MRR / ARR / growth stats
 
+## 📸 Screenshots
+
+### 📊 Dashboard
+ภาพรวมการเงิน · กราฟรายรับ-รายจ่าย · สัดส่วนหมวดหมู่ · insights อัจฉริยะ
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+<table>
+  <tr>
+    <td width="50%"><b>💸 Transactions</b><br/><img src="docs/screenshots/transactions.png" alt="Transactions" /></td>
+    <td width="50%"><b>💎 Subscription &amp; Plans</b><br/><img src="docs/screenshots/subscriptions.png" alt="Subscriptions" /></td>
+  </tr>
+  <tr>
+    <td width="50%"><b>👛 Wallets</b><br/><img src="docs/screenshots/wallets.png" alt="Wallets" /></td>
+    <td width="50%"><b>🔐 Login</b><br/><img src="docs/screenshots/login.png" alt="Login" /></td>
+  </tr>
+</table>
+
 ## 🧱 Tech Stack
 
 | ส่วน | เทคโนโลยี |
