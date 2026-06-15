@@ -62,6 +62,27 @@ enum SubscriptionStatus {
   expired
 }
 
+enum PaymentMethod {
+  promptpay
+  manual
+}
+
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+}
+
+enum SupportType {
+  feedback
+  contact
+}
+
+enum SupportStatus {
+  open
+  closed
+}
+
 // ─────────────────────────── Models ───────────────────────────
 
 model User {
@@ -72,14 +93,19 @@ model User {
   password        String      @db.VarChar(255)
   systemRole      SystemRole  @default(user) @map("system_role")
   emailVerifiedAt DateTime?   @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt     DateTime?   @map("last_login_at") @db.Timestamptz(6)
+  suspendedAt     DateTime?   @map("suspended_at") @db.Timestamptz(6)
 
   lastActiveWorkspaceId BigInt?    @map("last_active_workspace_id")
   lastActiveWorkspace   Workspace? @relation("UserLastActiveWorkspace", fields: [lastActiveWorkspaceId], references: [id], onDelete: SetNull)
 
-  ownedWorkspaces Workspace[]   @relation("WorkspaceOwner")
-  memberships     Membership[]
-  transactions    Transaction[] @relation("TransactionCreatedBy")
-  refreshTokens   RefreshToken[]
+  ownedWorkspaces  Workspace[]      @relation("WorkspaceOwner")
+  memberships      Membership[]
+  transactions     Transaction[]    @relation("TransactionCreatedBy")
+  refreshTokens    RefreshToken[]
+  auditLogs        AdminAuditLog[]  @relation("AuditActor")
+  reviewedPayments Payment[]        @relation("PaymentReviewer")
+  supportTickets   SupportTicket[]
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -97,11 +123,13 @@ model Workspace {
   type         WorkspaceType
   baseCurrency String        @default("THB") @map("base_currency") @db.Char(3)
   settings     Json          @default("{}") @db.JsonB
+  suspendedAt  DateTime?     @map("suspended_at") @db.Timestamptz(6)
 
   memberships   Membership[]
   wallets       Wallet[]
   categories    Category[]
   transactions  Transaction[]
+  payments      Payment[]
   subscriptions Subscription[]
   activeForUsers User[]       @relation("UserLastActiveWorkspace")
 
@@ -277,6 +305,70 @@ model PasswordResetToken {
 
   @@index([email])
   @@map("password_reset_tokens")
+}
+
+// ─────────────── Admin / SaaS back-office (Step 9) ───────────────
+
+model AdminAuditLog {
+  id         BigInt   @id @default(autoincrement())
+  actorId    BigInt?  @map("actor_id")
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action     String   @db.VarChar(80) // admin.login, user.suspend, payment.approve ...
+  targetType String?  @map("target_type") @db.VarChar(40)
+  targetId   String?  @map("target_id") @db.VarChar(80)
+  metadata   Json     @default("{}") @db.JsonB
+  ip         String?  @db.VarChar(64)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+model Payment {
+  id           BigInt        @id @default(autoincrement())
+  publicId     String        @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("public_id")
+  workspaceId  BigInt        @map("workspace_id")
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planCode     PlanCode      @map("plan_code")
+  amount       BigInt // satang
+  method       PaymentMethod @default(promptpay)
+  status       PaymentStatus @default(pending)
+  reference    String?       @db.VarChar(120) // เลขอ้างอิง/สลิป
+  reviewedById BigInt?       @map("reviewed_by_id")
+  reviewedBy   User?         @relation("PaymentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?     @map("reviewed_at") @db.Timestamptz(6)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([status])
+  @@index([workspaceId])
+  @@map("payments")
+}
+
+model SupportTicket {
+  id        BigInt        @id @default(autoincrement())
+  publicId  String        @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("public_id")
+  userId    BigInt?       @map("user_id")
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email     String        @db.VarChar(255)
+  type      SupportType   @default(contact)
+  subject   String        @db.VarChar(160)
+  message   String        @db.Text
+  status    SupportStatus @default(open)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([status])
+  @@index([type])
+  @@map("support_tickets")
+}
+
+model AppSetting {
+  id        BigInt   @id @default(autoincrement())
+  key       String   @unique @db.VarChar(80)
+  value     Json     @default("{}") @db.JsonB
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("app_settings")
 }
 
 // ───────────────────────────────────────────────────────────────

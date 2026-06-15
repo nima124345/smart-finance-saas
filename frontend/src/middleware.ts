@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
  *  - หน้าอื่น (โซนผู้เช่า) → ไม่มี auth เด้ง /login
  */
 const AUTH_COOKIE = "sf-auth";
+const ADMIN_COOKIE = "sf-admin";
 const ADMIN_LOGIN = "/admin/login";
 const TENANT_AUTH_PATHS = [
   "/login",
@@ -26,7 +27,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next(); // เปิดได้เสมอ
   }
   if (pathname.startsWith("/admin")) {
-    if (!hasAuth) {
+    const hasAdmin = req.cookies.has(ADMIN_COOKIE);
+    if (!hasAdmin) {
       const url = req.nextUrl.clone();
       url.pathname = ADMIN_LOGIN;
       return NextResponse.redirect(url);

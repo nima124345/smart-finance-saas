@@ -6,9 +6,9 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getApiErrorMessage } from "@/lib/api/axios";
-import { useAdminLogin } from "@/features/auth/hooks/use-auth";
+import { getAdminErrorMessage } from "@/lib/api/admin-axios";
 import { loginSchema, type LoginInput } from "@/features/auth/schemas";
+import { useAdminLogin } from "../hooks/use-admin-auth";
 
 export function AdminLoginForm() {
   const login = useAdminLogin();
@@ -31,7 +31,6 @@ export function AdminLoginForm() {
           <p className="text-xs text-destructive">{errors.email.message}</p>
         )}
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="password">รหัสผ่าน</Label>
         <Input
@@ -44,13 +43,11 @@ export function AdminLoginForm() {
           <p className="text-xs text-destructive">{errors.password.message}</p>
         )}
       </div>
-
       {login.isError && (
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {getApiErrorMessage(login.error)}
+          {getAdminErrorMessage(login.error)}
         </p>
       )}
-
       <Button type="submit" className="w-full" disabled={login.isPending}>
         {login.isPending ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบผู้ดูแล"}
       </Button>

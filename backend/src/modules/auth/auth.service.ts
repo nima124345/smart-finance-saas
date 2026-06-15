@@ -2,7 +2,6 @@ import { randomBytes } from 'crypto';
 
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -137,31 +136,6 @@ export class AuthService {
 
     const ok = await argon2.verify(user.password, dto.password);
     if (!ok) throw invalid();
-
-    const issued = await this.tokens.issueTokens(user);
-    return { ...issued, user: this.toPublicUser(user) };
-  }
-
-  // ── ADMIN LOGIN (เฉพาะ system_role = admin) ───────────────
-  async adminLogin(dto: LoginDto): Promise<AuthResult> {
-    const user = await this.prisma.user.findFirst({
-      where: { email: dto.email, deletedAt: null },
-    });
-
-    const invalid = () =>
-      new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
-
-    if (!user) {
-      await argon2.hash('dummy-timing-guard');
-      throw invalid();
-    }
-    const ok = await argon2.verify(user.password, dto.password);
-    if (!ok) throw invalid();
-
-    // ผู้เช่า (user) เข้าประตูแอดมินไม่ได้
-    if (user.systemRole !== 'admin') {
-      throw new ForbiddenException('บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบผู้ดูแล');
-    }
 
     const issued = await this.tokens.issueTokens(user);
     return { ...issued, user: this.toPublicUser(user) };

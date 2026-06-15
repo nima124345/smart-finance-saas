@@ -10,6 +10,10 @@ export default () => ({
     accessTtl: process.env.JWT_ACCESS_TTL ?? '15m',
     refreshSecret: process.env.JWT_REFRESH_SECRET ?? '',
     refreshTtl: process.env.JWT_REFRESH_TTL ?? '30d',
+    adminAccessSecret: process.env.JWT_ADMIN_ACCESS_SECRET ?? '',
+    adminAccessTtl: process.env.JWT_ADMIN_ACCESS_TTL ?? '15m',
+    adminRefreshSecret: process.env.JWT_ADMIN_REFRESH_SECRET ?? '',
+    adminRefreshTtl: process.env.JWT_ADMIN_REFRESH_TTL ?? '7d',
   },
   cookie: {
     secure: process.env.COOKIE_SECURE === 'true',
