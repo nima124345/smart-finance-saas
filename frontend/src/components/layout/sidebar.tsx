@@ -4,10 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { adminNav, mainNav } from "@/config/nav";
+import { mainNav } from "@/config/nav";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/auth-store";
 
 /**
  * Sidebar navigation (skeleton)
@@ -15,8 +14,7 @@ import { useAuthStore } from "@/stores/auth-store";
  */
 export function Sidebar() {
   const pathname = usePathname();
-  const isAdmin = useAuthStore((s) => s.user?.systemRole === "admin");
-  const items = [...mainNav, ...(isAdmin ? adminNav : [])];
+  const items = mainNav;
 
   return (
     <aside className="hidden w-60 shrink-0 border-r bg-card lg:flex lg:flex-col">

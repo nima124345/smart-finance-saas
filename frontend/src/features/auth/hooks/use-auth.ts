@@ -46,6 +46,20 @@ export function useRegister() {
   });
 }
 
+/** Admin portal login — แยกจากผู้เช่า, ไม่ hydrate workspace, ไปที่ /admin */
+export function useAdminLogin() {
+  const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  return useMutation({
+    mutationFn: authApi.adminLogin,
+    onSuccess: (result) => {
+      setAuth({ user: result.user, accessToken: result.accessToken });
+      setAuthFlag();
+      router.replace("/admin");
+    },
+  });
+}
+
 export function useForgotPassword() {
   return useMutation({ mutationFn: authApi.forgotPassword });
 }

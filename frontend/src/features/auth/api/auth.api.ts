@@ -30,6 +30,18 @@ export const authApi = {
     return data.data;
   },
 
+  /** เข้าระบบผู้ดูแล — backend ปฏิเสธบัญชีที่ไม่ใช่ admin (403) */
+  async adminLogin(body: {
+    email: string;
+    password: string;
+  }): Promise<AuthResult> {
+    const { data } = await api.post<ApiResponse<AuthResult>>(
+      endpoints.auth.adminLogin,
+      body,
+    );
+    return data.data;
+  },
+
   async refresh(): Promise<{ accessToken: string }> {
     const { data } = await api.post<ApiResponse<{ accessToken: string }>>(
       endpoints.auth.refresh,
