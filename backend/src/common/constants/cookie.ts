@@ -6,23 +6,31 @@ export const REFRESH_COOKIE_PATH = '/api/v1/auth';
 
 export const REFRESH_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 วัน
 
-/** สร้าง cookie options (secure ตาม env) */
-export function refreshCookieOptions(secure: boolean): CookieOptions {
+export interface CookieConfig {
+  secure: boolean;
+  sameSite: 'lax' | 'none' | 'strict';
+  domain?: string;
+}
+
+/** สร้าง cookie options (รองรับ cross-site production: secure + sameSite=none + domain) */
+export function refreshCookieOptions(cfg: CookieConfig): CookieOptions {
   return {
     httpOnly: true,
-    secure,
-    sameSite: 'lax',
+    secure: cfg.secure,
+    sameSite: cfg.sameSite,
+    domain: cfg.domain,
     path: REFRESH_COOKIE_PATH,
     maxAge: REFRESH_MAX_AGE_MS,
   };
 }
 
-/** options สำหรับ clear cookie (ต้องตรง path/sameSite/httpOnly) */
-export function clearRefreshCookieOptions(secure: boolean): CookieOptions {
+/** options สำหรับ clear cookie (ต้องตรง path/sameSite/domain) */
+export function clearRefreshCookieOptions(cfg: CookieConfig): CookieOptions {
   return {
     httpOnly: true,
-    secure,
-    sameSite: 'lax',
+    secure: cfg.secure,
+    sameSite: cfg.sameSite,
+    domain: cfg.domain,
     path: REFRESH_COOKIE_PATH,
   };
 }

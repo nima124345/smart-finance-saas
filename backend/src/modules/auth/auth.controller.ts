@@ -35,13 +35,17 @@ export class AuthController {
     private readonly config: ConfigService,
   ) {}
 
-  private get secure(): boolean {
-    return this.config.get<boolean>('cookie.secure', false);
+  private get cookieCfg() {
+    return {
+      secure: this.config.get<boolean>('cookie.secure', false),
+      sameSite: this.config.get<'lax' | 'none' | 'strict'>('cookie.sameSite', 'lax'),
+      domain: this.config.get<string | undefined>('cookie.domain'),
+    };
   }
 
   /** ตั้ง httpOnly cookie + คืนเฉพาะ accessToken + user (ไม่ leak refresh token ใน body) */
   private setRefreshCookie(res: Response, result: AuthResult) {
-    res.cookie(REFRESH_COOKIE, result.refreshToken, refreshCookieOptions(this.secure));
+    res.cookie(REFRESH_COOKIE, result.refreshToken, refreshCookieOptions(this.cookieCfg));
     return { accessToken: result.accessToken, user: result.user };
   }
 
@@ -77,7 +81,7 @@ export class AuthController {
   ) {
     const raw = req.cookies?.[REFRESH_COOKIE] as string | undefined;
     const result = await this.authService.refresh(raw);
-    res.cookie(REFRESH_COOKIE, result.refreshToken, refreshCookieOptions(this.secure));
+    res.cookie(REFRESH_COOKIE, result.refreshToken, refreshCookieOptions(this.cookieCfg));
     return { accessToken: result.accessToken };
   }
 
@@ -90,7 +94,7 @@ export class AuthController {
   ) {
     const raw = req.cookies?.[REFRESH_COOKIE] as string | undefined;
     await this.authService.logout(raw);
-    res.clearCookie(REFRESH_COOKIE, clearRefreshCookieOptions(this.secure));
+    res.clearCookie(REFRESH_COOKIE, clearRefreshCookieOptions(this.cookieCfg));
   }
 
   @Public()

@@ -33,12 +33,16 @@ export class AdminAuthController {
     private readonly config: ConfigService,
   ) {}
 
-  private get secure(): boolean {
-    return this.config.get<boolean>('cookie.secure', false);
+  private get cookieCfg() {
+    return {
+      secure: this.config.get<boolean>('cookie.secure', false),
+      sameSite: this.config.get<'lax' | 'none' | 'strict'>('cookie.sameSite', 'lax'),
+      domain: this.config.get<string | undefined>('cookie.domain'),
+    };
   }
 
   private setCookie(res: Response, result: AdminAuthResult) {
-    res.cookie(ADMIN_REFRESH_COOKIE, result.refreshToken, adminCookieOptions(this.secure));
+    res.cookie(ADMIN_REFRESH_COOKIE, result.refreshToken, adminCookieOptions(this.cookieCfg));
     return { accessToken: result.accessToken, admin: result.admin };
   }
 
@@ -63,7 +67,7 @@ export class AdminAuthController {
   ) {
     const raw = req.cookies?.[ADMIN_REFRESH_COOKIE] as string | undefined;
     const result = await this.auth.refresh(raw);
-    res.cookie(ADMIN_REFRESH_COOKIE, result.refreshToken, adminCookieOptions(this.secure));
+    res.cookie(ADMIN_REFRESH_COOKIE, result.refreshToken, adminCookieOptions(this.cookieCfg));
     return { accessToken: result.accessToken, admin: result.admin };
   }
 
@@ -74,7 +78,7 @@ export class AdminAuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.auth.logout(req.cookies?.[ADMIN_REFRESH_COOKIE] as string | undefined);
-    res.clearCookie(ADMIN_REFRESH_COOKIE, clearAdminCookieOptions(this.secure));
+    res.clearCookie(ADMIN_REFRESH_COOKIE, clearAdminCookieOptions(this.cookieCfg));
   }
 
   @UseGuards(AdminJwtGuard)
