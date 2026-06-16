@@ -16,7 +16,11 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 };
 
 async function bootstrap() {
+  // eslint-disable-next-line no-console
+  console.log('⏳ bootstrap: creating Nest application...');
   const app = await NestFactory.create(AppModule, { cors: false });
+  // eslint-disable-next-line no-console
+  console.log('✅ bootstrap: Nest application created (modules initialized)');
   const config = app.get(ConfigService);
 
   // อยู่หลัง reverse proxy (Railway/Vercel) — เชื่อ X-Forwarded-* ชั้นแรก
@@ -56,9 +60,16 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const port = config.get<number>('app.port', 8000);
-  await app.listen(port);
+  // bind 0.0.0.0 ชัดเจน — Railway/containers healthcheck เข้าผ่าน interface นี้
+  // (ไม่งั้นบาง runtime bind เฉพาะ ::1/localhost → healthcheck "service unavailable")
+  await app.listen(port, '0.0.0.0');
   // eslint-disable-next-line no-console
-  console.log(`🚀 API ready at http://localhost:${port}/${prefix}`);
+  console.log(`🚀 API ready on 0.0.0.0:${port}/${prefix}`);
 }
 
-void bootstrap();
+bootstrap().catch((err) => {
+  // surface fatal boot error แทนที่จะ exit เงียบ ๆ (เห็นใน Deploy Logs)
+  // eslint-disable-next-line no-console
+  console.error('💥 bootstrap failed:', err);
+  process.exit(1);
+});
