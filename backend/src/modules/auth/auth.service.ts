@@ -11,6 +11,7 @@ import * as argon2 from 'argon2';
 import { User } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { LOCKOUT_MS, MAX_FAILED_LOGINS } from '../../common/constants/security';
 import { TokenService } from './token.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -134,11 +135,43 @@ export class AuthService {
       throw invalid();
     }
 
-    const ok = await argon2.verify(user.password, dto.password);
-    if (!ok) throw invalid();
+    // ถูกล็อกชั่วคราวจากการเดารหัสผิดซ้ำ — ตอบ generic ไม่เปิดเผยสถานะบัญชี
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await argon2.hash('dummy-timing-guard');
+      throw invalid();
+    }
 
+    const ok = await argon2.verify(user.password, dto.password);
+    if (!ok) {
+      await this.registerFailedLogin(user.id, user.failedLoginCount);
+      throw invalid();
+    }
+
+    await this.clearFailedLogins(user);
     const issued = await this.tokens.issueTokens(user);
     return { ...issued, user: this.toPublicUser(user) };
+  }
+
+  /** นับ login ที่ผิด — ถึงเกณฑ์ → ล็อกบัญชีชั่วคราว แล้วรีเซ็ตตัวนับ */
+  private async registerFailedLogin(
+    userId: bigint,
+    current: number,
+  ): Promise<void> {
+    const next = current + 1;
+    const data =
+      next >= MAX_FAILED_LOGINS
+        ? { failedLoginCount: 0, lockedUntil: new Date(Date.now() + LOCKOUT_MS) }
+        : { failedLoginCount: next };
+    await this.prisma.user.update({ where: { id: userId }, data });
+  }
+
+  /** login สำเร็จ → ล้างตัวนับ/สถานะล็อก (เขียนเฉพาะเมื่อจำเป็น) */
+  private async clearFailedLogins(user: User): Promise<void> {
+    if (user.failedLoginCount === 0 && !user.lockedUntil) return;
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginCount: 0, lockedUntil: null },
+    });
   }
 
   // ── REFRESH (rotation + reuse detection) ──────────────────
@@ -213,11 +246,14 @@ export class AuthService {
       },
     });
 
-    // dev: log ลิงก์รีเซ็ต (prod: ส่งอีเมลจริง)
-    const url = `${this.config.get('app.frontendUrl')}/reset-password?email=${encodeURIComponent(
-      dto.email,
-    )}&token=${rawToken}`;
-    this.logger.log(`🔑 Password reset link: ${url}`);
+    // dev: log ลิงก์รีเซ็ต (prod: ส่งอีเมลจริง — ห้าม log token ใน production)
+    if (this.config.get<string>('app.env') !== 'production') {
+      const url = `${this.config.get('app.frontendUrl')}/reset-password?email=${encodeURIComponent(
+        dto.email,
+      )}&token=${rawToken}`;
+      this.logger.log(`🔑 Password reset link: ${url}`);
+    }
+    // TODO(prod): ส่งอีเมลรีเซ็ตจริงผ่าน mail provider ที่นี่
 
     return generic;
   }

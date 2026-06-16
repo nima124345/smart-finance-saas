@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import Redis from 'ioredis';
 
 import configuration from './config/configuration';
 import { validateEnv } from './config/env.validation';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RedisThrottlerStorage } from './common/throttler/redis-throttler.storage';
 import { PrismaModule } from './prisma/prisma.module';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -27,12 +29,26 @@ import { HealthModule } from './modules/health/health.module';
       load: [configuration],
       validate: validateEnv,
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: parseInt(process.env.THROTTLE_TTL ?? '60', 10) * 1000,
-        limit: parseInt(process.env.THROTTLE_LIMIT ?? '120', 10),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get<string>('throttle.redisUrl');
+        return {
+          throttlers: [
+            {
+              ttl: config.get<number>('throttle.ttl', 60) * 1000,
+              limit: config.get<number>('throttle.limit', 120),
+            },
+          ],
+          // มี REDIS_URL → แชร์ counter ข้าม instance; ไม่มี → in-memory (default)
+          storage: redisUrl
+            ? new RedisThrottlerStorage(
+                new Redis(redisUrl, { maxRetriesPerRequest: 1 }),
+              )
+            : undefined,
+        };
       },
-    ]),
+    }),
     PrismaModule,
 
     // Feature modules (domain)

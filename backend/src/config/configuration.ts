@@ -37,5 +37,7 @@ export default () => ({
   throttle: {
     ttl: parseInt(process.env.THROTTLE_TTL ?? '60', 10),
     limit: parseInt(process.env.THROTTLE_LIMIT ?? '120', 10),
+    // ตั้ง REDIS_URL → rate limit แชร์ข้าม instance; ไม่ตั้ง = in-memory (เครื่องเดียว)
+    redisUrl: process.env.REDIS_URL || undefined,
   },
 });

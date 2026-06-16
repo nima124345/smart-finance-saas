@@ -96,6 +96,10 @@ model User {
   lastLoginAt     DateTime?   @map("last_login_at") @db.Timestamptz(6)
   suspendedAt     DateTime?   @map("suspended_at") @db.Timestamptz(6)
 
+  // brute-force lockout: นับ login ที่ผิด + ล็อกชั่วคราวเมื่อถึงเกณฑ์
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil      DateTime? @map("locked_until") @db.Timestamptz(6)
+
   lastActiveWorkspaceId BigInt?    @map("last_active_workspace_id")
   lastActiveWorkspace   Workspace? @relation("UserLastActiveWorkspace", fields: [lastActiveWorkspaceId], references: [id], onDelete: SetNull)
 

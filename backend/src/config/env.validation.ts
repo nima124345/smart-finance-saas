@@ -19,7 +19,8 @@ const SECRET_KEYS = [
   'JWT_ADMIN_ACCESS_SECRET',
   'JWT_ADMIN_REFRESH_SECRET',
 ] as const;
-const MIN_SECRET_LEN = 16;
+// 256-bit เป็นอย่างน้อยสำหรับ HS256 (32 ตัวอักษร) — กัน brute-force ลายเซ็น
+const MIN_SECRET_LEN = 32;
 
 export function validateEnv(config: Record<string, unknown>) {
   const missing = REQUIRED.filter((key) => !config[key]);
