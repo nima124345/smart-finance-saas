@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
@@ -31,7 +31,10 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const prefix = config.get<string>('app.apiPrefix', 'api/v1');
-  app.setGlobalPrefix(prefix);
+  // ยกเว้น root `/` ออกจาก prefix — ให้ AppController.root ตอบที่ `/` (landing)
+  app.setGlobalPrefix(prefix, {
+    exclude: [{ path: '/', method: RequestMethod.GET }],
+  });
 
   app.use(helmet());
   app.use(cookieParser());

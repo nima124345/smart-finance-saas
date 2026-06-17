@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import Redis from 'ioredis';
 
+import { AppController } from './app.controller';
 import configuration from './config/configuration';
 import { validateEnv } from './config/env.validation';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -64,6 +65,7 @@ import { HealthModule } from './modules/health/health.module';
     AdminModule,
     HealthModule,
   ],
+  controllers: [AppController],
   providers: [
     // JWT required ทุก route (ยกเว้น @Public) + rate limit ทั่วระบบ
     { provide: APP_GUARD, useClass: JwtAuthGuard },
