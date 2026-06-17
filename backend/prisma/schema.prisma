@@ -51,6 +51,7 @@ enum TransactionType {
 enum PlanCode {
   free
   pro
+  business
   premium
 }
 
@@ -81,6 +82,13 @@ enum SupportType {
 enum SupportStatus {
   open
   closed
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  revoked
+  expired
 }
 
 // ─────────────────────────── Models ───────────────────────────
@@ -114,6 +122,8 @@ model User {
   auditLogs        AdminAuditLog[]  @relation("AuditActor")
   reviewedPayments Payment[]        @relation("PaymentReviewer")
   supportTickets   SupportTicket[]
+  sentInvitations  WorkspaceInvitation[] @relation("InvitationInviter")
+  activityLogs     ActivityLog[]    @relation("ActivityActor")
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -139,6 +149,8 @@ model Workspace {
   transactions  Transaction[]
   payments      Payment[]
   subscriptions Subscription[]
+  invitations   WorkspaceInvitation[]
+  activityLogs  ActivityLog[]
   activeForUsers User[]       @relation("UserLastActiveWorkspace")
 
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -256,6 +268,7 @@ model Plan {
   maxWorkspaces         Int?     @map("max_workspaces")
   maxWallets            Int?     @map("max_wallets")
   maxTransactionsMonth  Int?     @map("max_transactions_month")
+  maxMembers            Int?     @map("max_members") // จำนวนสมาชิกต่อ workspace (business); null = ไม่จำกัด
   features              Json     @default("{}") @db.JsonB
   isActive              Boolean  @default(true) @map("is_active")
 
@@ -287,6 +300,47 @@ model Subscription {
   // partial unique (1 active/workspace) → migration SQL
   @@index([workspaceId])
   @@map("subscriptions")
+}
+
+// ─────────────── Business workspace: team + activity ───────────────
+
+// คำเชิญสมาชิกเข้า workspace (business) ทางอีเมล — รับด้วย token
+model WorkspaceInvitation {
+  id          BigInt           @id @default(autoincrement())
+  publicId    String           @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("public_id")
+  workspaceId BigInt           @map("workspace_id")
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email       String           @db.VarChar(255)
+  role        MembershipRole // admin (Manager) | member (Staff) — เชิญ owner ไม่ได้
+  tokenHash   String           @unique @map("token_hash") @db.VarChar(255) // SHA-256 hex (ไม่เก็บ plain)
+  status      InvitationStatus @default(pending)
+  invitedById BigInt           @map("invited_by_id")
+  invitedBy   User             @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime         @map("expires_at") @db.Timestamptz(6)
+  acceptedAt  DateTime?        @map("accepted_at") @db.Timestamptz(6)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([workspaceId])
+  @@index([email])
+  @@map("workspace_invitations")
+}
+
+// บันทึกกิจกรรมของสมาชิกใน workspace (ใคร สร้าง/แก้/ลบ รายการ) — ต่างจาก AdminAuditLog ฝั่ง back-office
+model ActivityLog {
+  id          BigInt    @id @default(autoincrement())
+  workspaceId BigInt    @map("workspace_id")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actorId     BigInt?   @map("actor_id")
+  actor       User?     @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action      String    @db.VarChar(80) // transaction.create, transaction.update, member.invite ...
+  targetType  String?   @map("target_type") @db.VarChar(40)
+  targetId    String?   @map("target_id") @db.VarChar(80)
+  metadata    Json      @default("{}") @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@map("activity_logs")
 }
 
 // ─────────────── Auth infra (รายละเอียดเต็มใน Step 5) ───────────────

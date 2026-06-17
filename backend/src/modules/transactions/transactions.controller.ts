@@ -61,29 +61,41 @@ export class TransactionsController {
   @Roles(MembershipRole.owner, MembershipRole.admin, MembershipRole.member)
   @Patch(':publicId')
   update(
-    @CurrentWorkspace('workspaceId') workspaceId: bigint,
+    @CurrentWorkspace() ws: WorkspaceContext,
+    @CurrentUser('id') userId: bigint,
     @Param('publicId') publicId: string,
     @Body() dto: UpdateTransactionDto,
   ) {
-    return this.transactionsService.update(workspaceId, publicId, dto);
+    return this.transactionsService.update(ws.workspaceId, publicId, dto, {
+      userId,
+      role: ws.role,
+    });
   }
 
   @Roles(MembershipRole.owner, MembershipRole.admin, MembershipRole.member)
   @Delete(':publicId')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
-    @CurrentWorkspace('workspaceId') workspaceId: bigint,
+    @CurrentWorkspace() ws: WorkspaceContext,
+    @CurrentUser('id') userId: bigint,
     @Param('publicId') publicId: string,
   ) {
-    return this.transactionsService.remove(workspaceId, publicId);
+    return this.transactionsService.remove(ws.workspaceId, publicId, {
+      userId,
+      role: ws.role,
+    });
   }
 
   @Roles(MembershipRole.owner, MembershipRole.admin)
   @Post(':publicId/restore')
   restore(
-    @CurrentWorkspace('workspaceId') workspaceId: bigint,
+    @CurrentWorkspace() ws: WorkspaceContext,
+    @CurrentUser('id') userId: bigint,
     @Param('publicId') publicId: string,
   ) {
-    return this.transactionsService.restore(workspaceId, publicId);
+    return this.transactionsService.restore(ws.workspaceId, publicId, {
+      userId,
+      role: ws.role,
+    });
   }
 }

@@ -27,14 +27,29 @@ function featureLines(p: Plan): { label: string; ok: boolean }[] {
           : `${p.maxTransactionsMonth} รายการ/เดือน`,
       ok: true,
     },
+    {
+      label:
+        p.maxMembers == null
+          ? "สมาชิกทีมไม่จำกัด"
+          : `${p.maxMembers} สมาชิก/workspace`,
+      ok: p.maxMembers == null || p.maxMembers > 1,
+    },
     { label: "Dashboard ขั้นสูง", ok: p.features.advancedDashboard },
     { label: "Export CSV", ok: p.features.exportCsv },
-    { label: "ทีม/สมาชิกร่วม", ok: p.features.teamMembers },
+    { label: "จัดการทีมงาน (เชิญสมาชิก)", ok: p.features.teamMembers },
+    { label: "Business Dashboard", ok: p.features.businessDashboard },
+    { label: "รายงานธุรกิจ + Export PDF/Excel", ok: p.features.businessReports },
+    { label: "Activity Log พนักงาน", ok: p.features.activityLog },
     { label: "AI Insights", ok: p.features.aiInsights },
   ];
 }
 
-const ORDER: Record<PlanCode, number> = { free: 0, pro: 1, premium: 2 };
+const ORDER: Record<PlanCode, number> = {
+  free: 0,
+  pro: 1,
+  business: 2,
+  premium: 3,
+};
 
 export function PlanCards({
   plans,
@@ -48,11 +63,11 @@ export function PlanCards({
   onSelect: (code: PlanCode) => void;
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {plans.map((p) => {
         const isCurrent = p.code === currentCode;
         const isUpgrade = ORDER[p.code] > ORDER[currentCode];
-        const highlight = p.code === "pro";
+        const highlight = p.code === "business";
         return (
           <Card
             key={p.code}

@@ -14,6 +14,27 @@ export const endpoints = {
     create: "/workspaces",
     one: (id: string) => `/workspaces/${id}`,
   },
+  team: {
+    members: "/team/members",
+    invitations: "/team/invitations",
+    invitation: (id: string) => `/team/invitations/${id}`,
+    memberRole: (id: string) => `/team/members/${id}/role`,
+    member: (id: string) => `/team/members/${id}`,
+  },
+  invitations: {
+    preview: (token: string) => `/invitations/${token}`,
+    accept: "/invitations/accept",
+  },
+  activity: { base: "/activity" },
+  business: {
+    dashboard: "/business/dashboard",
+    reportRevenue: "/business/reports/revenue",
+    reportExpenses: "/business/reports/expenses",
+    reportProfit: "/business/reports/profit",
+    exportPdf: "/business/reports/export/pdf",
+    exportExcel: "/business/reports/export/excel",
+    insights: "/business/insights",
+  },
   wallets: { base: "/wallets", one: (id: string) => `/wallets/${id}` },
   categories: { base: "/categories", one: (id: string) => `/categories/${id}` },
   transactions: {

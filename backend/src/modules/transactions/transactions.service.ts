@@ -1,12 +1,15 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, TransactionType } from '@prisma/client';
+import { MembershipRole, Prisma, TransactionType } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { ActivityService } from '../activity/activity.service';
+import { ACTIVITY } from '../activity/activity.constants';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import {
@@ -22,12 +25,28 @@ const TX_INCLUDE = {
 
 type TxWithRelations = Prisma.TransactionGetPayload<{ include: typeof TX_INCLUDE }>;
 
+/** ผู้กระทำ (จาก JWT + workspace role) — ใช้ตรวจสิทธิ์ row-level + activity log */
+export interface TxActor {
+  userId: bigint;
+  role: MembershipRole;
+}
+
 @Injectable()
 export class TransactionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly activity: ActivityService,
   ) {}
+
+  /** Staff (member) แตะได้เฉพาะรายการที่ตัวเองสร้าง; Owner/Manager แตะได้ทุกอัน */
+  private assertCanMutate(actor: TxActor, createdById: bigint) {
+    if (actor.role === 'member' && createdById !== actor.userId) {
+      throw new ForbiddenException(
+        'Staff แก้ไข/ลบได้เฉพาะรายการที่ตัวเองสร้าง',
+      );
+    }
+  }
 
   // ── helpers ────────────────────────────────────────────────
   private map(t: TxWithRelations) {
@@ -218,6 +237,16 @@ export class TransactionsService {
       data,
       include: TX_INCLUDE,
     });
+
+    await this.activity.log({
+      workspaceId,
+      actorId: userId,
+      action: ACTIVITY.TX_CREATE,
+      targetType: 'transaction',
+      targetId: created.publicId,
+      metadata: { type: created.type, amount: created.amount.toString() },
+    });
+
     return this.map(created);
   }
 
@@ -226,11 +255,13 @@ export class TransactionsService {
     workspaceId: bigint,
     publicId: string,
     dto: UpdateTransactionDto,
+    actor: TxActor,
   ) {
     const existing = await this.prisma.transaction.findFirst({
       where: { workspaceId, publicId, deletedAt: null },
     });
     if (!existing) throw new NotFoundException('ไม่พบรายการ');
+    this.assertCanMutate(actor, existing.createdById);
 
     const data: Prisma.TransactionUpdateInput = {};
     if (dto.amount != null) data.amount = BigInt(dto.amount);
@@ -265,23 +296,43 @@ export class TransactionsService {
       data,
       include: TX_INCLUDE,
     });
+
+    await this.activity.log({
+      workspaceId,
+      actorId: actor.userId,
+      action: ACTIVITY.TX_UPDATE,
+      targetType: 'transaction',
+      targetId: updated.publicId,
+      metadata: { amount: updated.amount.toString() },
+    });
+
     return this.map(updated);
   }
 
   // ── SOFT DELETE / RESTORE ──────────────────────────────────
-  async remove(workspaceId: bigint, publicId: string) {
+  async remove(workspaceId: bigint, publicId: string, actor: TxActor) {
     const existing = await this.prisma.transaction.findFirst({
       where: { workspaceId, publicId, deletedAt: null },
-      select: { id: true },
+      select: { id: true, createdById: true },
     });
     if (!existing) throw new NotFoundException('ไม่พบรายการ');
+    this.assertCanMutate(actor, existing.createdById);
+
     await this.prisma.transaction.update({
       where: { id: existing.id },
       data: { deletedAt: new Date() },
     });
+
+    await this.activity.log({
+      workspaceId,
+      actorId: actor.userId,
+      action: ACTIVITY.TX_DELETE,
+      targetType: 'transaction',
+      targetId: publicId,
+    });
   }
 
-  async restore(workspaceId: bigint, publicId: string) {
+  async restore(workspaceId: bigint, publicId: string, actor: TxActor) {
     const existing = await this.prisma.transaction.findFirst({
       where: { workspaceId, publicId, NOT: { deletedAt: null } },
       select: { id: true },
@@ -292,6 +343,15 @@ export class TransactionsService {
       data: { deletedAt: null },
       include: TX_INCLUDE,
     });
+
+    await this.activity.log({
+      workspaceId,
+      actorId: actor.userId,
+      action: ACTIVITY.TX_RESTORE,
+      targetType: 'transaction',
+      targetId: publicId,
+    });
+
     return this.map(restored);
   }
 }

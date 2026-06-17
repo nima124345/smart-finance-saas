@@ -30,7 +30,7 @@ export function SubscriptionsView() {
   if (current.isLoading || plans.isLoading) {
     return (
       <>
-        <PageHeader title="แพ็กเกจ" description="Free · Pro · Premium" />
+        <PageHeader title="แพ็กเกจ" description="Free · Pro · Business · Premium" />
         <LoadingState rows={3} />
       </>
     );

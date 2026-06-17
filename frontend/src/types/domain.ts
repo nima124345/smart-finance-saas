@@ -6,7 +6,14 @@ export type TransactionType = "income" | "expense" | "transfer";
 export type CategoryType = "income" | "expense";
 export type MembershipRole = "owner" | "admin" | "member";
 export type SystemRole = "user" | "admin";
-export type PlanCode = "free" | "pro" | "premium";
+export type PlanCode = "free" | "pro" | "business" | "premium";
+
+/** ป้ายชื่อ role เชิงธุรกิจ (ตรงกับ backend ROLE_LABELS) */
+export const ROLE_LABELS: Record<MembershipRole, string> = {
+  owner: "Owner",
+  admin: "Manager",
+  member: "Staff",
+};
 
 export interface User {
   publicId: string;

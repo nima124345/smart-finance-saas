@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { BUSINESS_DEFAULT_CATEGORIES } from '../categories/business-categories';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 
 /**
@@ -47,6 +48,22 @@ export class WorkspacesService {
       await tx.membership.create({
         data: { workspaceId: ws.id, userId, role: 'owner' },
       });
+
+      // business → seed หมวดหมู่เริ่มต้นสำหรับร้าน (custom ของ workspace นี้)
+      if (ws.type === 'business') {
+        await tx.category.createMany({
+          data: BUSINESS_DEFAULT_CATEGORIES.map((c, i) => ({
+            workspaceId: ws.id,
+            name: c.name,
+            type: c.type,
+            icon: c.icon,
+            color: c.color,
+            isSystem: false,
+            sortOrder: i,
+          })),
+        });
+      }
+
       await this.subscriptions.createFree(tx, ws.id);
       return ws;
     });

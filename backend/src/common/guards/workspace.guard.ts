@@ -34,7 +34,11 @@ export class WorkspaceGuard implements CanActivate {
         user: { id: request.user.id },
         workspace: { publicId: header, deletedAt: null },
       },
-      select: { role: true, workspaceId: true },
+      select: {
+        role: true,
+        workspaceId: true,
+        workspace: { select: { type: true } },
+      },
     });
 
     if (!membership) {
@@ -44,6 +48,7 @@ export class WorkspaceGuard implements CanActivate {
     request.workspace = {
       workspaceId: membership.workspaceId,
       role: membership.role,
+      type: membership.workspace.type,
     };
     return true;
   }

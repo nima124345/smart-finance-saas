@@ -4,6 +4,9 @@ export interface PlanFeatures {
   advancedDashboard: boolean;
   exportCsv: boolean;
   teamMembers: boolean;
+  businessDashboard: boolean;
+  businessReports: boolean;
+  activityLog: boolean;
   aiInsights: boolean;
 }
 
@@ -14,6 +17,7 @@ export interface Plan {
   maxWorkspaces: number | null;
   maxWallets: number | null;
   maxTransactionsMonth: number | null;
+  maxMembers: number | null;
   features: PlanFeatures;
 }
 

@@ -4,17 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { mainNav } from "@/config/nav";
+import { buildNav } from "@/config/nav";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
-/**
- * Sidebar navigation (skeleton)
- * TODO(Step 5+): active workspace context, collapse, mobile drawer
- */
+/** Sidebar navigation — เมนูปรับตามประเภท workspace + role */
 export function Sidebar() {
   const pathname = usePathname();
-  const items = mainNav;
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const activeId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const active = workspaces.find((w) => w.publicId === activeId);
+  const items = buildNav(active?.type, active?.role);
 
   return (
     <aside className="hidden w-60 shrink-0 border-r bg-card lg:flex lg:flex-col">

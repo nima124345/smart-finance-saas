@@ -15,6 +15,9 @@ type PlanFeatures = {
   advancedDashboard: boolean;
   exportCsv: boolean;
   teamMembers: boolean;
+  businessDashboard: boolean;
+  businessReports: boolean;
+  activityLog: boolean;
   aiInsights: boolean;
 };
 
@@ -40,6 +43,7 @@ export class SubscriptionsService {
       maxWorkspaces: plan.maxWorkspaces,
       maxWallets: plan.maxWallets,
       maxTransactionsMonth: plan.maxTransactionsMonth,
+      maxMembers: plan.maxMembers,
       features: plan.features as PlanFeatures,
     };
   }
@@ -123,6 +127,30 @@ export class SubscriptionsService {
     }
   }
 
+  /** เพิ่มสมาชิกได้อีกไหม (นับ membership ปัจจุบัน + คำเชิญที่ค้าง vs plan.maxMembers) */
+  async assertCanInviteMember(workspaceId: bigint): Promise<void> {
+    const plan = await this.getEffectivePlan(workspaceId);
+    if (!(plan.features as PlanFeatures).teamMembers) {
+      throw new ForbiddenException({
+        code: 'PLAN_FEATURE_TEAM',
+        message: `แพ็กเกจ ${plan.name} ไม่รองรับการเพิ่มสมาชิกทีม — อัปเกรดเป็น Business`,
+      });
+    }
+    if (plan.maxMembers == null) return; // unlimited
+    const [members, pending] = await Promise.all([
+      this.prisma.membership.count({ where: { workspaceId } }),
+      this.prisma.workspaceInvitation.count({
+        where: { workspaceId, status: 'pending' },
+      }),
+    ]);
+    if (members + pending >= plan.maxMembers) {
+      throw new ForbiddenException({
+        code: 'PLAN_LIMIT_MEMBERS',
+        message: `แพ็กเกจ ${plan.name} จำกัด ${plan.maxMembers} สมาชิก — อัปเกรดเพื่อเพิ่ม`,
+      });
+    }
+  }
+
   /** feature flag ตาม plan */
   async hasFeature(
     workspaceId: bigint,
@@ -130,6 +158,21 @@ export class SubscriptionsService {
   ): Promise<boolean> {
     const plan = await this.getEffectivePlan(workspaceId);
     return Boolean((plan.features as PlanFeatures)[flag]);
+  }
+
+  /** บังคับว่า plan ต้องมี feature นี้ ไม่งั้น 403 (พร้อม upgrade hint) */
+  async assertFeature(
+    workspaceId: bigint,
+    flag: keyof PlanFeatures,
+  ): Promise<void> {
+    const plan = await this.getEffectivePlan(workspaceId);
+    if (!(plan.features as PlanFeatures)[flag]) {
+      throw new ForbiddenException({
+        code: 'PLAN_FEATURE_REQUIRED',
+        feature: flag,
+        message: `แพ็กเกจ ${plan.name} ยังไม่รองรับฟีเจอร์นี้ — อัปเกรดเพื่อปลดล็อก`,
+      });
+    }
   }
 
   // ── สร้าง subscription เริ่มต้น (เรียกตอนสร้าง workspace) ──

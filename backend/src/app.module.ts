@@ -15,10 +15,13 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { MembershipsModule } from './modules/memberships/memberships.module';
+import { TeamModule } from './modules/team/team.module';
+import { ActivityModule } from './modules/activity/activity.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { BusinessModule } from './modules/business/business.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
@@ -57,10 +60,13 @@ import { HealthModule } from './modules/health/health.module';
     UsersModule,
     WorkspacesModule,
     MembershipsModule,
+    TeamModule,
+    ActivityModule,
     WalletsModule,
     CategoriesModule,
     TransactionsModule,
     DashboardModule,
+    BusinessModule,
     SubscriptionsModule,
     AdminModule,
     HealthModule,

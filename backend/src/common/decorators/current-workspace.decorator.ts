@@ -1,9 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { MembershipRole } from '@prisma/client';
+import { MembershipRole, WorkspaceType } from '@prisma/client';
 
 export interface WorkspaceContext {
   workspaceId: bigint;
   role: MembershipRole;
+  type: WorkspaceType;
 }
 
 /** ดึง workspace context (set โดย WorkspaceGuard หลังตรวจ membership) */

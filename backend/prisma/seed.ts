@@ -3,8 +3,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * Seed skeleton (idempotent ด้วย upsert)
- * เนื้อหาเต็ม (plans + system categories) เติมใน Step 8 / Step 6
+ * Seed (idempotent ด้วย upsert/findFirst)
+ *  - plans: Free / Pro / Business / Premium (4 ระดับ)
+ *  - system categories (personal): workspaceId = null
+ *  (business categories ถูก seed ต่อ-workspace ตอนสร้าง workspace แบบ business — ดู workspaces.service)
  */
 async function seedPlans(): Promise<void> {
   const plans = [
@@ -15,38 +17,68 @@ async function seedPlans(): Promise<void> {
       maxWorkspaces: 1,
       maxWallets: 2,
       maxTransactionsMonth: 100,
+      maxMembers: 1,
       features: {
         advancedDashboard: false,
         exportCsv: false,
         teamMembers: false,
+        businessDashboard: false,
+        businessReports: false,
+        activityLog: false,
         aiInsights: false,
       },
     },
     {
       code: 'pro' as const,
       name: 'Pro',
-      price: BigInt(9900), // ฿99/เดือน
+      price: BigInt(9900), // ฿99/เดือน — power features ส่วนบุคคล
       maxWorkspaces: 5,
       maxWallets: null, // unlimited
       maxTransactionsMonth: null,
+      maxMembers: 1,
       features: {
         advancedDashboard: true,
         exportCsv: true,
         teamMembers: false,
+        businessDashboard: false,
+        businessReports: false,
+        activityLog: false,
+        aiInsights: false,
+      },
+    },
+    {
+      code: 'business' as const,
+      name: 'Business',
+      price: BigInt(29900), // ฿299/เดือน — ทีม + รายงานธุรกิจ
+      maxWorkspaces: null,
+      maxWallets: null,
+      maxTransactionsMonth: null,
+      maxMembers: 10,
+      features: {
+        advancedDashboard: true,
+        exportCsv: true,
+        teamMembers: true,
+        businessDashboard: true,
+        businessReports: true,
+        activityLog: true,
         aiInsights: false,
       },
     },
     {
       code: 'premium' as const,
       name: 'Premium',
-      price: BigInt(29900), // ฿299/เดือน
+      price: BigInt(59900), // ฿599/เดือน — Business + AI Insights
       maxWorkspaces: null,
       maxWallets: null,
       maxTransactionsMonth: null,
+      maxMembers: null, // unlimited
       features: {
         advancedDashboard: true,
         exportCsv: true,
         teamMembers: true,
+        businessDashboard: true,
+        businessReports: true,
+        activityLog: true,
         aiInsights: true,
       },
     },
@@ -61,6 +93,7 @@ async function seedPlans(): Promise<void> {
         maxWorkspaces: plan.maxWorkspaces,
         maxWallets: plan.maxWallets,
         maxTransactionsMonth: plan.maxTransactionsMonth,
+        maxMembers: plan.maxMembers,
         features: plan.features,
       },
       create: plan,
@@ -111,7 +144,7 @@ async function main(): Promise<void> {
   await seedPlans();
   await seedSystemCategories();
   // eslint-disable-next-line no-console
-  console.log('✅ Seed completed (skeleton)');
+  console.log('✅ Seed completed (plans x4 + system categories)');
 }
 
 main()

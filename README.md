@@ -10,13 +10,33 @@
 
 ## ✨ Features
 
-- 🔐 **Authentication** — JWT access + refresh token rotation, Argon2, ลืมรหัสผ่าน
-- 🏢 **Multi-Tenant** — แยกข้อมูลด้วย Workspace (personal / business)
+- 🔐 **Authentication** — JWT access + refresh token rotation, Argon2, Google OAuth, ลืมรหัสผ่าน
+- 🏢 **Multi-Tenant** — แยกข้อมูลด้วย Workspace (personal / business) + onboarding wizard
 - 💸 **Transaction Engine** — รายรับ / รายจ่าย / โอนระหว่างกระเป๋า + filter + cursor pagination
 - 👛 **Wallets** — หลายกระเป๋า (เงินสด / ธนาคาร / พร้อมเพย์) + คำนวณยอดอัตโนมัติ
 - 📊 **Dashboard** — กราฟ (Recharts), insights, สรุปตามช่วงเวลา
-- 💎 **Subscription** — Free / Pro / Premium + plan limit enforcement + PRO trial 14 วัน
+- 💎 **Subscription** — Free / Pro / Business / Premium + plan limit enforcement + PRO trial 14 วัน
+
+### 🏪 Business Workspace (สำหรับร้านค้า/ธุรกิจ)
+- 👥 **Team Management** — เชิญสมาชิกทางอีเมล, บทบาท Owner / Manager / Staff, permission matrix
+- 📈 **Business Dashboard** — รายได้รายวัน/เดือน, กำไรสุทธิ, อัตรากำไร, แนวโน้ม, หมวดหมู่สูงสุด
+- 📑 **Business Reports** — รายงานรายได้ / ค่าใช้จ่าย / กำไร-ขาดทุน + Export **PDF / Excel**
+- 🕑 **Activity Log** — ติดตามว่าใคร สร้าง/แก้/ลบ รายการ (timeline + filter)
+- 🤖 **AI Insights** (Premium) — วิเคราะห์แนวโน้ม + คำแนะนำอัตโนมัติ (rule-based, พร้อมต่อ Claude)
 - 🛠️ **Admin Dashboard** — จัดการผู้ใช้ + MRR / ARR / growth stats
+
+## 📚 Documentation
+
+| เอกสาร | เนื้อหา |
+|--------|---------|
+| [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) | Environment variables ทั้ง backend + frontend |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production runbook — Supabase · Railway · Vercel |
+| [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) | การรัน Prisma migration บน production |
+| [docs/API.md](docs/API.md) | API reference + Role Permission Matrix |
+| [docs/SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md) | Security checklist ก่อน go-live |
+| [docs/BACKUP_RECOVERY.md](docs/BACKUP_RECOVERY.md) | Backup & recovery |
+| [docs/MONITORING.md](docs/MONITORING.md) | Monitoring & health checks |
+| [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md) | Release notes v1.0 |
 
 ## 📸 Screenshots
 
@@ -41,9 +61,11 @@
 | ส่วน | เทคโนโลยี |
 |------|-----------|
 | Frontend | Next.js 15 (App Router) · TypeScript · Tailwind · Shadcn UI · Zustand · TanStack Query |
-| Backend | NestJS · Prisma · JWT (Passport) |
-| Database | PostgreSQL |
+| Backend | NestJS · Prisma · JWT (Passport) · Google OAuth |
+| Database | PostgreSQL (Supabase) |
 | Charts | Recharts |
+| Export | pdfkit (PDF) · exceljs (Excel) |
+| Hosting | Railway (API) · Vercel (Web) |
 
 ## 📁 Structure
 
