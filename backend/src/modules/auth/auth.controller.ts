@@ -4,15 +4,19 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 
 import { Public } from '../../common/decorators/public.decorator';
+import { GoogleProfile } from './strategies/google.strategy';
 import {
   AuthUser,
   CurrentUser,
@@ -30,6 +34,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly config: ConfigService,
@@ -111,6 +117,40 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  // ── GOOGLE OAUTH ──────────────────────────────────────────
+  /** เริ่ม flow — AuthGuard('google') เด้งไปหน้า consent ของ Google เอง */
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleAuth() {
+    // ไม่มี body — guard จัดการ redirect ไป Google
+  }
+
+  /** callback จาก Google → หา/สร้าง user → ตั้ง refresh cookie → redirect กลับ frontend */
+  @Public()
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const frontend = this.config.get<string>(
+      'app.frontendUrl',
+      'http://localhost:3000',
+    );
+    try {
+      const profile = req.user as GoogleProfile;
+      const result = await this.authService.loginWithGoogle(profile);
+      res.cookie(
+        REFRESH_COOKIE,
+        result.refreshToken,
+        refreshCookieOptions(this.cookieCfg),
+      );
+      // ไม่ส่ง access token ผ่าน URL — frontend จะ silent-refresh จาก cookie ตอนโหลด
+      res.redirect(`${frontend}/dashboard`);
+    } catch (err) {
+      this.logger.error('Google OAuth callback ล้มเหลว', err as Error);
+      res.redirect(`${frontend}/login?error=google`);
+    }
   }
 
   @Get('me')

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api/axios";
 import { useLogin } from "../hooks/use-auth";
 import { loginSchema, type LoginInput } from "../schemas";
+import { GoogleButton } from "./google-button";
 
 export function LoginForm() {
   const login = useLogin();
@@ -63,6 +64,8 @@ export function LoginForm() {
       <Button type="submit" className="w-full" disabled={login.isPending}>
         {login.isPending ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </Button>
+
+      <GoogleButton label="เข้าสู่ระบบด้วย Google" />
 
       <p className="text-center text-sm text-muted-foreground">
         ยังไม่มีบัญชี?{" "}

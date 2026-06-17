@@ -53,6 +53,12 @@ export class AdminAuthService {
       throw invalid();
     }
 
+    // บัญชี Google (ไม่มีรหัสผ่าน) เข้า admin portal ด้วยรหัสผ่านไม่ได้
+    if (!user.password) {
+      await argon2.hash('dummy-timing-guard');
+      throw invalid();
+    }
+
     const ok = await argon2.verify(user.password, pass);
     if (!ok) {
       const next = user.failedLoginCount + 1;

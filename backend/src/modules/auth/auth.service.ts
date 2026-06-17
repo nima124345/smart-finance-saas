@@ -8,11 +8,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { LOCKOUT_MS, MAX_FAILED_LOGINS } from '../../common/constants/security';
 import { TokenService } from './token.service';
+import { GoogleProfile } from './strategies/google.strategy';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -66,11 +67,31 @@ export class AuthService {
       type: argon2.argon2id,
     });
 
-    // user + personal workspace + membership(owner) + free subscription (atomic)
-    const user = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.user.create({
-        data: { name: dto.name, email: dto.email, password: passwordHash },
-      });
+    const user = await this.provisionUser({
+      name: dto.name,
+      email: dto.email,
+      password: passwordHash,
+    });
+
+    const issued = await this.tokens.issueTokens(user);
+    return { ...issued, user: this.toPublicUser(user) };
+  }
+
+  /**
+   * สร้าง user + personal workspace + membership(owner) + PRO trial 14 วัน (atomic)
+   * ใช้ร่วมกันทั้ง register (email/password) และ Google OAuth (ไม่มี password)
+   */
+  private async provisionUser(
+    data: Pick<Prisma.UserCreateInput, 'name' | 'email'> &
+      Partial<
+        Pick<
+          Prisma.UserCreateInput,
+          'password' | 'googleId' | 'avatarUrl' | 'emailVerifiedAt'
+        >
+      >,
+  ): Promise<User> {
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({ data });
 
       const workspace = await tx.workspace.create({
         data: {
@@ -114,6 +135,43 @@ export class AuthService {
 
       return created;
     });
+  }
+
+  // ── GOOGLE OAUTH ──────────────────────────────────────────
+  /** หา/ผูก/สร้าง user จาก Google profile แล้วออก token (เหมือน login) */
+  async loginWithGoogle(profile: GoogleProfile): Promise<AuthResult> {
+    // 1) เคยผูก Google ไว้แล้ว → ใช้บัญชีนั้น
+    let user = await this.prisma.user.findFirst({
+      where: { googleId: profile.googleId, deletedAt: null },
+    });
+
+    // 2) ยังไม่ผูก แต่มีบัญชี email เดิม → link googleId เข้าบัญชีเดิม
+    if (!user) {
+      const byEmail = await this.prisma.user.findFirst({
+        where: { email: profile.email, deletedAt: null },
+      });
+      if (byEmail) {
+        user = await this.prisma.user.update({
+          where: { id: byEmail.id },
+          data: {
+            googleId: profile.googleId,
+            avatarUrl: byEmail.avatarUrl ?? profile.avatarUrl,
+            emailVerifiedAt: byEmail.emailVerifiedAt ?? new Date(),
+          },
+        });
+      }
+    }
+
+    // 3) ไม่มีเลย → สร้างใหม่ (ไม่มี password) + workspace + trial
+    if (!user) {
+      user = await this.provisionUser({
+        name: profile.name,
+        email: profile.email,
+        googleId: profile.googleId,
+        avatarUrl: profile.avatarUrl,
+        emailVerifiedAt: new Date(), // Google ยืนยันอีเมลให้แล้ว
+      });
+    }
 
     const issued = await this.tokens.issueTokens(user);
     return { ...issued, user: this.toPublicUser(user) };
@@ -137,6 +195,12 @@ export class AuthService {
 
     // ถูกล็อกชั่วคราวจากการเดารหัสผิดซ้ำ — ตอบ generic ไม่เปิดเผยสถานะบัญชี
     if (user.lockedUntil && user.lockedUntil > new Date()) {
+      await argon2.hash('dummy-timing-guard');
+      throw invalid();
+    }
+
+    // บัญชีสมัครผ่าน Google (ไม่มีรหัสผ่าน) → ให้ login ด้วย Google เท่านั้น
+    if (!user.password) {
       await argon2.hash('dummy-timing-guard');
       throw invalid();
     }

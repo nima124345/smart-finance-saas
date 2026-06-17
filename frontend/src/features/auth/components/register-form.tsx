@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { getApiErrorMessage } from "@/lib/api/axios";
 import { useRegister } from "../hooks/use-auth";
 import { registerSchema, type RegisterInput } from "../schemas";
+import { GoogleButton } from "./google-button";
 
 export function RegisterForm() {
   const signup = useRegister();
@@ -63,6 +64,8 @@ export function RegisterForm() {
       <Button type="submit" className="w-full" disabled={signup.isPending}>
         {signup.isPending ? "กำลังสมัคร..." : "สมัครสมาชิก"}
       </Button>
+
+      <GoogleButton label="สมัครด้วย Google" />
 
       <p className="text-center text-sm text-muted-foreground">
         มีบัญชีอยู่แล้ว?{" "}

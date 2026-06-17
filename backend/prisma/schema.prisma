@@ -90,7 +90,11 @@ model User {
   publicId        String      @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid @map("public_id")
   name            String      @db.VarChar(120)
   email           String      @unique @db.VarChar(255)
-  password        String      @db.VarChar(255)
+  // nullable — ผู้ใช้ที่สมัครผ่าน OAuth (Google) ไม่มีรหัสผ่าน
+  password        String?     @db.VarChar(255)
+  // Google OAuth: subject id (sub) — unique ต่อบัญชี Google; null = ไม่ได้ผูก Google
+  googleId        String?     @unique @map("google_id") @db.VarChar(64)
+  avatarUrl       String?     @map("avatar_url") @db.VarChar(512)
   systemRole      SystemRole  @default(user) @map("system_role")
   emailVerifiedAt DateTime?   @map("email_verified_at") @db.Timestamptz(6)
   lastLoginAt     DateTime?   @map("last_login_at") @db.Timestamptz(6)

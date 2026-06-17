@@ -18,6 +18,14 @@ export default () => ({
               .join(','),
           ) || ['http://localhost:3000'],
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+    // ต้องตรงกับ Authorized redirect URI ที่ตั้งใน Google Cloud Console
+    callbackUrl:
+      process.env.GOOGLE_CALLBACK_URL ??
+      'http://localhost:8000/api/v1/auth/google/callback',
+  },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? '',
     accessTtl: process.env.JWT_ACCESS_TTL ?? '15m',
