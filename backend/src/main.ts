@@ -18,7 +18,14 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap() {
   // eslint-disable-next-line no-console
   console.log('⏳ bootstrap: creating Nest application...');
-  const app = await NestFactory.create(AppModule, { cors: false });
+  // bootstrap ปิด log ระดับ verbose ของ Nest (route mapping เป็นร้อยบรรทัด ปริ้นตอน
+  // app.listen()) — กัน log burst ท่วม stdout pipe ของ Railway (collector ดูดไม่ทัน →
+  // kernel buffer เต็ม → process.stdout.write บล็อก event loop → app.listen() ไปไม่ถึง
+  // → healthcheck fail แบบสุ่ม) แล้วค่อยเปิด log กลับ "หลัง" listen (ดูท้าย bootstrap)
+  const app = await NestFactory.create(AppModule, {
+    cors: false,
+    logger: ['error', 'warn'],
+  });
   // eslint-disable-next-line no-console
   console.log('✅ bootstrap: Nest application created (modules initialized)');
   const config = app.get(ConfigService);
@@ -66,6 +73,9 @@ async function bootstrap() {
   // bind 0.0.0.0 ชัดเจน — Railway/containers healthcheck เข้าผ่าน interface นี้
   // (ไม่งั้นบาง runtime bind เฉพาะ ::1/localhost → healthcheck "service unavailable")
   await app.listen(port, '0.0.0.0');
+  // listen เสร็จ (route mapping จบ) แล้วค่อยเปิด log กลับ — runtime HTTP request logging
+  // (LoggingInterceptor ใช้ Logger ระดับ 'log') ยังทำงาน โดยไม่มี burst ตอน bootstrap
+  app.useLogger(['error', 'warn', 'log']);
   // eslint-disable-next-line no-console
   console.log(`🚀 API ready on 0.0.0.0:${port}/${prefix}`);
 }
